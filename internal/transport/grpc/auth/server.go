@@ -2,6 +2,10 @@ package server
 
 import (
 	"context"
+	"errors"
+
+	"auth/internal/services/auth"
+	"auth/pkg/storage"
 
 	ssov1 "github.com/CrispyCl/TestProtos/gen/go/sso"
 	"google.golang.org/grpc"
@@ -43,9 +47,9 @@ func (s *GRPCServer) Login(
 	access, refresh, err := s.authServ.Login(ctx, req.Email, req.Password, int(req.AppId))
 
 	if err != nil {
-		// if errors.Is(err, auth.ErrInvalidCredentials) {
-		// 	return nil, status.Error(codes.InvalidArgument, "invalid email or password")
-		// }
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			return nil, status.Error(codes.InvalidArgument, "invalid email or password")
+		}
 
 		return nil, status.Error(codes.Internal, "failed to login")
 	}
@@ -68,9 +72,9 @@ func (s *GRPCServer) Register(
 	uid, err := s.authServ.Register(ctx, req.Email, req.Password)
 
 	if err != nil {
-		// if errors.Is(err, db.ErrUserExists) {
-		// 	return nil, status.Error(codes.AlreadyExists, "user already exists")
-		// }
+		if errors.Is(err, storage.ErrUserExists) {
+			return nil, status.Error(codes.AlreadyExists, "user already exists")
+		}
 
 		return nil, status.Error(codes.Internal, "failed to register user")
 	}

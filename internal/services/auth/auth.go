@@ -1,16 +1,17 @@
 package auth
 
 import (
-	"auth/internal/domain/models"
-	"auth/internal/domain/sessions"
-	"auth/pkg/jwt"
-	"auth/pkg/logger"
-	"auth/pkg/storage"
 	"context"
 	"errors"
 	"fmt"
 	"log/slog"
 	"time"
+
+	"auth/internal/domain/models"
+	"auth/internal/domain/sessions"
+	"auth/pkg/jwt"
+	"auth/pkg/logger"
+	"auth/pkg/storage"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -75,8 +76,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string, appID i
 	if err != nil {
 		if errors.Is(err, storage.ErrUserNotFound) {
 			log.Warn("user not found", logger.Err(err))
-
-			return "", "", fmt.Errorf("%s: %w", op, err)
+			return "", "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
 		}
 
 		log.Error("failed to get user", logger.Err(err))
@@ -85,7 +85,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string, appID i
 
 	if err := bcrypt.CompareHashAndPassword(user.PassHash, []byte(password)); err != nil {
 		log.Info("invalid credentials", logger.Err(err))
-		return "", "", fmt.Errorf("%s: %w", op, err)
+		return "", "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
 	}
 
 	app, err := s.appRepo.Get(ctx, appID)

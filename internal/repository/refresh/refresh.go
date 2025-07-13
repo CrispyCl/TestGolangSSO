@@ -1,11 +1,12 @@
 package refresh
 
 import (
-	"auth/internal/domain/sessions"
 	"context"
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"auth/internal/domain/sessions"
 
 	"github.com/redis/go-redis/v9"
 )
