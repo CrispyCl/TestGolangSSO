@@ -18,7 +18,7 @@ type Config struct {
 	Timeout        time.Duration `env:"SERVER_TIMEOUT" env-default:"10h"`
 }
 
-func MustLoad() *Config {
+func MustLoad() Config {
 	configPath := fetchConfigPath()
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -30,7 +30,7 @@ func MustLoad() *Config {
 		panic(err)
 	}
 
-	return &cfg
+	return cfg
 }
 
 func fetchConfigPath() string {

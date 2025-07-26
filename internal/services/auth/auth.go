@@ -9,9 +9,9 @@ import (
 
 	"auth/internal/domain/models"
 	"auth/internal/domain/sessions"
+	"auth/internal/repository"
 	"auth/pkg/jwt"
 	"auth/pkg/logger"
-	"auth/pkg/storage"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -47,7 +47,7 @@ func New(log *slog.Logger, userRepo UserRepository, appRepo AppRepository, acces
 	return &AuthService{log: log, userRepo: userRepo, appRepo: appRepo, accessTTL: accessTTL, refreshTTL: refreshTTL}
 }
 
-func (s *AuthService) Register(ctx context.Context, email, password string) (userID int64, err error) {
+func (s AuthService) Register(ctx context.Context, email, password string) (userID int64, err error) {
 	const op = "AuthService.Register"
 
 	log := s.log.With(slog.String("op", op), slog.String("email", email))
@@ -60,21 +60,25 @@ func (s *AuthService) Register(ctx context.Context, email, password string) (use
 
 	uid, err := s.userRepo.Create(ctx, email, passHash)
 	if err != nil {
-		log.Error("failed to save user", logger.Err(err))
+		if errors.Is(err, repository.ErrUserExists) {
+			log.Info("user with this email is exists", logger.Err(err))
+		} else {
+			log.Error("failed to save user", logger.Err(err))
+		}
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return uid, nil
 }
 
-func (s *AuthService) Login(ctx context.Context, email, password string, appID int, ip, userAgent string) (access, refresh string, err error) {
+func (s AuthService) Login(ctx context.Context, email, password string, appID int) (accessToken, refreshToken string, err error) {
 	const op = "AuthService.Login"
 
 	log := s.log.With(slog.String("op", op), slog.String("email", email))
 
 	user, err := s.userRepo.Get(ctx, email)
 	if err != nil {
-		if errors.Is(err, storage.ErrUserNotFound) {
+		if errors.Is(err, repository.ErrUserNotFound) {
 			log.Warn("user not found", logger.Err(err))
 			return "", "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
 		}
@@ -90,23 +94,22 @@ func (s *AuthService) Login(ctx context.Context, email, password string, appID i
 
 	app, err := s.appRepo.Get(ctx, appID)
 	if err != nil {
+		log.Error("faiiled to get app", logger.Err(err))
 		return "", "", fmt.Errorf("%s: %w", op, err)
 	}
 
-	accessToken, err := jwt.GenerateJWT(app.AccessSecret, user.ID, user.Email, app.ID, s.accessTTL)
+	accessToken, err = jwt.GenerateJWT(app.AccessSecret, user.ID, user.Email, app.ID, s.accessTTL)
 	if err != nil {
 		log.Error("faiiled to generate access token", logger.Err(err))
 		return "", "", fmt.Errorf("%s: %w", op, err)
 	}
 
-	refreshToken := jwt.GenerateRandomToken(32)
+	refreshToken = jwt.GenerateRandomToken(32)
 	expiresAt := time.Now().Add(s.refreshTTL).UTC()
 
 	session := sessions.RefreshSession{
 		UserID:    user.ID,
 		AppID:     app.ID,
-		IP:        ip,
-		UserAgent: userAgent,
 		ExpiresAt: expiresAt,
 	}
 
@@ -120,7 +123,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string, appID i
 	return accessToken, refreshToken, nil
 }
 
-func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (access, refresh string, err error) {
+func (s AuthService) Refresh(ctx context.Context, refreshToken string) (access, refresh string, err error) {
 	const op = "AuthService.Refresh"
 
 	log := s.log.With(slog.String("op", op))

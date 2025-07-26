@@ -1,13 +1,13 @@
-package server
+package authgrpc
 
 import (
 	"context"
 	"errors"
 
+	"auth/internal/repository"
 	"auth/internal/services/auth"
-	"auth/pkg/storage"
 
-	ssov1 "github.com/CrispyCl/TestProtos/gen/go/sso"
+	ssov1 "github.com/CrispyCl/testprotos/gen/go/sso"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -19,7 +19,7 @@ type GRPCServer struct {
 }
 
 type AuthService interface {
-	Login(ctx context.Context, email, password string, appID int) (accessToken, refreshToken string, err error)
+	Login(ctx context.Context, email, password string, appID int) (string, string, error)
 	Register(ctx context.Context, email, password string) (userID int64, err error)
 	Refresh(ctx context.Context, refreshToken string) (newAccess, newRefresh string, err error)
 }
@@ -72,7 +72,7 @@ func (s *GRPCServer) Register(
 	uid, err := s.authServ.Register(ctx, req.Email, req.Password)
 
 	if err != nil {
-		if errors.Is(err, storage.ErrUserExists) {
+		if errors.Is(err, repository.ErrUserExists) {
 			return nil, status.Error(codes.AlreadyExists, "user already exists")
 		}
 

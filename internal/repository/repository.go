@@ -1,18 +1,9 @@
-package storage
+package repository
 
-import (
-	"errors"
-
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
-)
+import "errors"
 
 var (
 	ErrUserExists   = errors.New("user already exists")
 	ErrUserNotFound = errors.New("user not found")
 	ErrAppNotFound  = errors.New("app not found")
 )
-
-type DB struct {
-	DB *sqlx.DB
-}
