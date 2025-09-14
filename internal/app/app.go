@@ -4,8 +4,10 @@ import (
 	grpcapp "auth/internal/app/grpc"
 	"auth/internal/config"
 	"auth/internal/repository/pg"
+	"auth/internal/repository/refresh"
 	"auth/internal/services/auth"
 	"auth/pkg/storage/postgres"
+	"auth/pkg/storage/redis"
 	"log/slog"
 	"time"
 )
@@ -20,10 +22,16 @@ func New(log *slog.Logger, cfg config.Config) *App {
 		panic(err)
 	}
 
+	rdb, err := redis.NewClient(cfg.Redis)
+	if err != nil {
+		panic(err)
+	}
+
 	userRepo := pg.NewUserRepository(db)
 	appRepo := pg.NewAppRepository(db)
+	refreshRepo := refresh.New(rdb)
 
-	authService := auth.New(log, userRepo, appRepo, time.Duration(time.Second), time.Duration(time.Second))
+	authService := auth.New(log, userRepo, appRepo, refreshRepo, time.Duration(time.Second), time.Duration(time.Second))
 
 	grpcApp := grpcapp.New(log, *authService, cfg.GRPCServerPort)
 

@@ -6,12 +6,14 @@ import (
 	"time"
 
 	"auth/pkg/storage/postgres"
+	"auth/pkg/storage/redis"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
 type Config struct {
 	Postgres postgres.Config
+	Redis    redis.Config
 
 	Env            string        `env:"ENV" env-default:"local"`
 	GRPCServerPort int           `env:"GRPC_SERVER_PORT"`

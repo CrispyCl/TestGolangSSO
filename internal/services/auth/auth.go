@@ -43,8 +43,8 @@ type AuthService struct {
 	accessTTL, refreshTTL time.Duration
 }
 
-func New(log *slog.Logger, userRepo UserRepository, appRepo AppRepository, accessTTL, refreshTTL time.Duration) *AuthService {
-	return &AuthService{log: log, userRepo: userRepo, appRepo: appRepo, accessTTL: accessTTL, refreshTTL: refreshTTL}
+func New(log *slog.Logger, userRepo UserRepository, appRepo AppRepository, refreshStorage RefreshStorage, accessTTL, refreshTTL time.Duration) *AuthService {
+	return &AuthService{log: log, userRepo: userRepo, appRepo: appRepo, refreshStorage: refreshStorage, accessTTL: accessTTL, refreshTTL: refreshTTL}
 }
 
 func (s AuthService) Register(ctx context.Context, email, password string) (userID int64, err error) {
@@ -74,7 +74,7 @@ func (s AuthService) Register(ctx context.Context, email, password string) (user
 func (s AuthService) Login(ctx context.Context, email, password string, appID int) (accessToken, refreshToken string, err error) {
 	const op = "AuthService.Login"
 
-	log := s.log.With(slog.String("op", op), slog.String("email", email))
+	log := s.log.With(slog.String("op", op), slog.String("email", email), slog.Int("appID", appID))
 
 	user, err := s.userRepo.Get(ctx, email)
 	if err != nil {
@@ -112,6 +112,7 @@ func (s AuthService) Login(ctx context.Context, email, password string, appID in
 		AppID:     app.ID,
 		ExpiresAt: expiresAt,
 	}
+	fmt.Println(session)
 
 	if err := s.refreshStorage.Save(ctx, refreshToken, session); err != nil {
 		log.Error("failed to save refresh token", logger.Err(err))
