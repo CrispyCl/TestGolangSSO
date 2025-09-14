@@ -3,6 +3,7 @@ package authgrpc
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"auth/internal/repository"
 	"auth/internal/services/auth"
@@ -10,6 +11,8 @@ import (
 	ssov1 "github.com/CrispyCl/testprotos/gen/go/sso"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 )
 
@@ -19,13 +22,25 @@ type GRPCServer struct {
 }
 
 type AuthService interface {
-	Login(ctx context.Context, email, password string, appID int) (string, string, error)
+	Login(ctx context.Context, email, password string, appID int, ip, userAgent string) (string, string, error)
 	Register(ctx context.Context, email, password string) (userID int64, err error)
 	Refresh(ctx context.Context, refreshToken string) (newAccess, newRefresh string, err error)
 }
 
 func Register(gRPCServer *grpc.Server, auth AuthService) {
 	ssov1.RegisterAuthServer(gRPCServer, &GRPCServer{authServ: auth})
+}
+
+func extractMeta(ctx context.Context) (ip, ua string) {
+	if p, ok := peer.FromContext(ctx); ok {
+		ip = strings.Split(p.Addr.String(), ":")[0]
+	}
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		if uaVals := md.Get("user-agent"); len(uaVals) > 0 {
+			ua = uaVals[0]
+		}
+	}
+	return
 }
 
 func (s *GRPCServer) Login(
@@ -44,7 +59,9 @@ func (s *GRPCServer) Login(
 		return nil, status.Error(codes.InvalidArgument, "app_id is required")
 	}
 
-	access, refresh, err := s.authServ.Login(ctx, req.Email, req.Password, int(req.AppId))
+	ip, ua := extractMeta(ctx)
+
+	access, refresh, err := s.authServ.Login(ctx, req.Email, req.Password, int(req.AppId), ip, ua)
 
 	if err != nil {
 		if errors.Is(err, auth.ErrInvalidCredentials) {
@@ -80,4 +97,18 @@ func (s *GRPCServer) Register(
 	}
 
 	return &ssov1.RegisterResponse{UserId: uid}, nil
+}
+
+func (s *GRPCServer) Refresh(ctx context.Context, req *ssov1.RefreshTokenRequest) (*ssov1.TokenPairResponse, error) {
+	if req.RefreshToken == "" {
+		return nil, status.Error(codes.InvalidArgument, "refresh_token is required")
+	}
+
+	access, refresh, err := s.authServ.Refresh(ctx, req.RefreshToken)
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to refresh token")
+	}
+
+	return &ssov1.TokenPairResponse{AccessToken: access, RefreshToken: refresh}, nil
 }

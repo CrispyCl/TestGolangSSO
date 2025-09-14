@@ -31,7 +31,7 @@ func New(log *slog.Logger, cfg config.Config) *App {
 	appRepo := pg.NewAppRepository(db)
 	refreshRepo := refresh.New(rdb)
 
-	authService := auth.New(log, userRepo, appRepo, refreshRepo, time.Duration(time.Second), time.Duration(time.Second))
+	authService := auth.New(log, userRepo, appRepo, refreshRepo, time.Duration(time.Minute*15), time.Duration(time.Hour*24*15))
 
 	grpcApp := grpcapp.New(log, *authService, cfg.GRPCServerPort)
 

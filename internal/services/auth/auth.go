@@ -71,7 +71,7 @@ func (s AuthService) Register(ctx context.Context, email, password string) (user
 	return uid, nil
 }
 
-func (s AuthService) Login(ctx context.Context, email, password string, appID int) (accessToken, refreshToken string, err error) {
+func (s AuthService) Login(ctx context.Context, email, password string, appID int, ip, userAgent string) (accessToken, refreshToken string, err error) {
 	const op = "AuthService.Login"
 
 	log := s.log.With(slog.String("op", op), slog.String("email", email), slog.Int("appID", appID))
@@ -109,10 +109,12 @@ func (s AuthService) Login(ctx context.Context, email, password string, appID in
 
 	session := sessions.RefreshSession{
 		UserID:    user.ID,
+		UserEmail: user.Email,
 		AppID:     app.ID,
+		IP:        ip,
+		UserAgent: userAgent,
 		ExpiresAt: expiresAt,
 	}
-	fmt.Println(session)
 
 	if err := s.refreshStorage.Save(ctx, refreshToken, session); err != nil {
 		log.Error("failed to save refresh token", logger.Err(err))
@@ -131,17 +133,19 @@ func (s AuthService) Refresh(ctx context.Context, refreshToken string) (access, 
 
 	session, err := s.refreshStorage.Get(ctx, refreshToken)
 	if err != nil {
+		log.Error("failed to get refresh token", logger.Err(err))
 		return "", "", fmt.Errorf("%s: %w", op, err)
 	}
 
 	app, err := s.appRepo.Get(ctx, session.AppID)
 	if err != nil {
+		log.Error("failed to get app", logger.Err(err))
 		return "", "", fmt.Errorf("%s: app not found", op)
 	}
 
 	accessToken, err := jwt.GenerateJWT(app.AccessSecret, session.UserID, session.UserEmail, app.ID, s.accessTTL)
 	if err != nil {
-		log.Error("faiiled to generate access token", logger.Err(err))
+		log.Error("failed to generate access token", logger.Err(err))
 		return "", "", fmt.Errorf("%s: %w", op, err)
 	}
 
