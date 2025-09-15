@@ -3,7 +3,7 @@ module auth
 go 1.23.0
 
 require (
-	github.com/CrispyCl/testprotos v0.0.2
+	github.com/CrispyCl/testprotos v0.0.3
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/golang-migrate/migrate/v4 v4.18.3

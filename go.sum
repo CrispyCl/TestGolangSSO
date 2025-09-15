@@ -9,8 +9,8 @@ github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161/go.mod h1:xomTg6
 github.com/BurntSushi/toml v1.2.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
 github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
-github.com/CrispyCl/testprotos v0.0.2 h1:6kaXsuPoVYblOzZlnzrVfQ40zL4BQNB39RqXr0PHndo=
-github.com/CrispyCl/testprotos v0.0.2/go.mod h1:DxYfTG/hkqFXVl2ysWU5a+yhjH1GEs/OyTTUrrmXHw8=
+github.com/CrispyCl/testprotos v0.0.3 h1:onxh1PxQqaDjBvnyu3aXY6rBt4Ia1/TaA2CSPBu8vFI=
+github.com/CrispyCl/testprotos v0.0.3/go.mod h1:DxYfTG/hkqFXVl2ysWU5a+yhjH1GEs/OyTTUrrmXHw8=
 github.com/Masterminds/squirrel v1.5.4 h1:uUcX/aBc8O7Fg9kaISIUsHXdKuqehiXAMQTYX8afzqM=
 github.com/Masterminds/squirrel v1.5.4/go.mod h1:NNaOrjSoIDfDA40n7sr2tPNZRfjzjA400rg+riTZj10=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
